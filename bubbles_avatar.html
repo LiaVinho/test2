@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+ <head>
+    <title>Bubble Chart</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+ </head>
+ <body>
+    <div id="bubble-chart"></div>
+    <script>
+      // load data from CSV file
+      d3.csv("avatar_bss.csv").then(function (data) {
+        // convert strings to numbers
+        data.forEach(function (d) {
+          d.character_words = +d.character_words;
+        });
+
+        // create a tooltip
+        var tooltip = d3
+          .select("body")
+          .append("div")
+          .style("position", "absolute")
+          .style("background", "#fff")
+          .style("padding", "8px")
+          .style("border", "1px solid #000")
+          .style("border-radius", "4px")
+          .style("visibility", "hidden");
+
+        // set the dimensions and margins of the chart
+        var width = 800;
+        var height = 500;
+        var margin = 50;
+
+        // create a color scale for the bubbles
+        var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        // create a pack layout
+        var pack = d3.pack()
+          .size([width, height])
+          .padding(1.5);
+
+        // create a selection and apply the pack layout
+        var root = d3.hierarchy({ children: data })
+          .sum(function (d) { return d.character_words; });
+        var nodes = pack(root).leaves();
+
+        // create a scale for the bubble sizes
+        var sizeScale = d3.scaleLinear()
+          .domain([0, d3.max(data, function (d) { return d.character_words; })])
+          .range([10, 50]);
+
+        // create a SVG element and add it to the chart div
+        var svg = d3.select("#bubble-chart")
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .append("g")
+          .attr("transform", "translate(" + margin + "," + margin + ")");
+
+        // add the bubbles to the SVG element
+        var bubbles = svg.selectAll(".bubble")
+          .data(nodes)
+          .enter()
+          .append("circle")
+          .attr("class", "bubble")
+          .attr("cx", function (d) { return d.x; })
+          .attr("cy", function (d) { return d.y; })
+          .attr("r", function (d) { return sizeScale(d.data.character_words); })
+          .style("fill", function (d) { return colorScale(d.data.name); })
+          .on("mouseover", function (d) {
+            tooltip.style("visibility", "visible");
+            tooltip.text(d.data.name + ": " + d.data.character_words + " words");
+          })
+          .on("mousemove", function () {
+            tooltip.style("top", (d3.event.pageY - 10) + "px");
+            tooltip.style("left", (d3.event.pageX + 10) + "px");
+          })
+          .on("mouseout", function () {
+            tooltip.style("visibility", "hidden");
+          });
+      });
+    </script>
+ </body>
+</html>
